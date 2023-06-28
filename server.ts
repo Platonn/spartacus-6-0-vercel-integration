@@ -1,7 +1,10 @@
 import 'zone.js/dist/zone-node';
 
 import { ngExpressEngine as engine } from '@nguniversal/express-engine';
-import { NgExpressEngineDecorator } from '@spartacus/setup/ssr';
+import {
+  NgExpressEngineDecorator,
+  RenderingStrategy,
+} from '@spartacus/setup/ssr';
 import * as express from 'express';
 import { join } from 'path';
 
@@ -9,7 +12,11 @@ import { APP_BASE_HREF } from '@angular/common';
 import { existsSync } from 'fs';
 import { AppServerModule } from './src/main.server';
 
-const ngExpressEngine = NgExpressEngineDecorator.get(engine);
+const ngExpressEngine = NgExpressEngineDecorator.get(engine, {
+  renderingStrategyResolver: (_req) => {
+    return RenderingStrategy.ALWAYS_SSR;
+  },
+});
 
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 
