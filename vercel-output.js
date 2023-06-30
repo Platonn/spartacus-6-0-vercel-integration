@@ -7,12 +7,13 @@ const {
 } = require("fs");
 const { dirname } = require("path");
 
+const out_dir = ".vercel/output";
+const project_dist = "dist/mystore";
+
 function write(file, data) {
   try {
     mkdirSync(dirname(file), { recursive: true });
-  } catch {
-    console.error(`failed to write ${file}`);
-  }
+  } catch {}
 
   writeFileSync(file, data);
 }
@@ -30,41 +31,83 @@ function copyFiles(source, target) {
   }
 }
 
-const out_dir = ".vercel/output";
-const project_dist = "dist/mystore";
+function createSSRFunction() {
+  const fn_dir = `${out_dir}/functions/ssr.func`;
+  write(
+    `${fn_dir}/.vc-config.json`,
+    JSON.stringify({
+      runtime: "nodejs18.x",
+      handler: "index.js",
+      launcherType: "Nodejs",
+    })
+  );
+
+  copyFiles(`${project_dist}/server`, fn_dir);
+
+  write(`${fn_dir}/index.js`, `module.exports = require("./main.js").app();`);
+
+  // static files also need to be copied to the function dir because the server runtime uses them
+  mkdirSync(`${fn_dir}/${project_dist}/browser`, { recursive: true });
+  copyFiles(`${project_dist}/browser`, `${fn_dir}/${project_dist}/browser`);
+}
+
+function createISRFunction(name, group, fallback) {
+  const fn_dir = `${out_dir}/functions/isr-${name}.func`;
+  write(
+    `${fn_dir}/.vc-config.json`,
+    JSON.stringify({
+      runtime: "nodejs18.x",
+      handler: "index.js",
+      launcherType: "Nodejs",
+    })
+  );
+
+  copyFiles(`${project_dist}/server`, fn_dir);
+
+  write(`${fn_dir}/index.js`, `module.exports = require("./main.js").app();`);
+
+  // static files also need to be copied to the function dir because the server runtime uses them
+  mkdirSync(`${fn_dir}/${project_dist}/browser`, { recursive: true });
+  copyFiles(`${project_dist}/browser`, `${fn_dir}/${project_dist}/browser`);
+
+  // Create prerender config json file
+  write(
+    `${out_dir}/functions/isr-${name}.prerender-config.json`,
+    JSON.stringify({
+      // for this example we hardcoding the revalidation interval to 60 seconds
+      expiration: 60,
+      group,
+      allowQuery: ["__pathname"],
+      passQuery: true,
+      fallback,
+    })
+  );
+}
 
 // Create a static folder in the Vercel output folder for browser assets
 mkdirSync(`${out_dir}/static`, { recursive: true });
 // Copy all browser assets to the static Vercel folder
 copyFiles(`${project_dist}/browser`, `${out_dir}/static`);
 
-// Create a serverless function that will run the server runtime
-const fn_dir = `${out_dir}/functions/ssr.func`;
-// Write the config file for the server runtime
-write(
-  `${fn_dir}/.vc-config.json`,
-  JSON.stringify({
-    runtime: "nodejs18.x",
-    handler: "index.js",
-    launcherType: "Nodejs",
-  })
-);
-
-// Copy the main Spartacus bundle file to the serverless function directory
-copyFiles(`${project_dist}/server`, fn_dir);
-// Create an index.js file that will run the serverless application
-write(`${fn_dir}/index.js`, `module.exports = require("./main.js").app();`);
-
-// Since the serverless application relies on static files, create a function directory for them
-mkdirSync(`${fn_dir}/${project_dist}/browser`, { recursive: true });
-// Copy all the browser assets to the serverless function directory
-copyFiles(`${project_dist}/browser`, `${fn_dir}/${project_dist}/browser`);
+createSSRFunction();
+createISRFunction("electronics-detail-page", 1);
 
 // Write a config file for Vercel build output
 write(
   `${out_dir}/config.json`,
   JSON.stringify({
-    version: 1,
-    routes: [{ src: "/.*", dest: "/ssr" }],
+    version: 7,
+    routes: [
+      // Specify that ISR should be used for a product detail page
+      {
+        src: "/electronics-spa/en/USD/product/358639/DSC-N1$",
+        dest: "/isr-electronics-detail-page?__pathname=/electronics-spa/en/USD/product/358639/DSC-N1",
+      },
+      // Specify that SSR should be used for all other pages
+      {
+        src: "/.*",
+        dest: "/ssr",
+      },
+    ],
   })
 );
