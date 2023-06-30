@@ -31,7 +31,7 @@ function copyFiles(source, target) {
 }
 
 const out_dir = ".vercel/output";
-const project_dist = "dist/sap-store-6.x";
+const project_dist = "dist/mystore";
 
 // Create a static folder in the Vercel output folder for browser assets
 mkdirSync(`${out_dir}/static`, { recursive: true });
