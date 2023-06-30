@@ -100,8 +100,8 @@ write(
     routes: [
       // Specify that ISR should be used for a product detail page
       {
-        src: "/electronics-spa/en/USD/product/358639/DSC-N1$",
-        dest: "/isr-electronics-detail-page?__pathname=/electronics-spa/en/USD/product/358639/DSC-N1",
+        src: "/electronics-spa/en/USD/product/300938/Photosmart%20E317%20Digital%20Camera$",
+        dest: "/isr-electronics-detail-page?__pathname=/electronics-spa/en/USD/product/300938/Photosmart%20E317%20Digital%20Camera",
       },
       // Specify that SSR should be used for all other pages
       {
