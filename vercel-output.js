@@ -91,6 +91,8 @@ copyFiles(`${project_dist}/browser`, `${out_dir}/static`);
 
 createSSRFunction();
 createISRFunction("electronics-detail-page", 1);
+// Specify to the ISR function to use static/index.html during the initial user request
+createISRFunction("electronics-home-page", 2, "../static/index.html");
 
 // Write a config file for Vercel build output
 write(
@@ -98,6 +100,11 @@ write(
   JSON.stringify({
     version: 7,
     routes: [
+      // Specify that ISR with fallback should be used for the home page
+      {
+        src: "/electronics-spa/en/USD/$",
+        dest: "/isr-fallback-home?__pathname=/electronics-spa/en/USD/",
+      },
       // Specify that ISR should be used for a product detail page
       {
         src: "/electronics-spa/en/USD/product/358639/DSC-N1$",
